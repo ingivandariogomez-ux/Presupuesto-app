@@ -1,0 +1,1658 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Gestor de Presupuesto PRO</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f172a">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- CHART JS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+<style>
+body{
+    font-family:'Segoe UI', Arial;
+    background:#0f172a;
+    color:#e2e8f0;
+    padding:20px;
+}
+
+.container{
+    max-width:1000px;
+    margin:auto;
+    background:#111827;
+    padding:20px;
+    border-radius:15px;
+    box-shadow:0 0 25px rgba(0,0,0,0.5);
+}
+
+h1{
+    text-align:center;
+    color:#38bdf8;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:10px;
+    background:#1e293b;
+    border-radius:10px;
+    overflow:hidden;
+}
+
+th{
+    background:#0ea5e9;
+    color:black;
+    padding:8px;
+}
+
+td{
+    border:1px solid #334155;
+    padding:8px;
+    text-align:center;
+}
+
+button{padding:5px 10px;margin:2px;}button{
+    padding:6px 12px;
+    margin:2px;
+    background:#38bdf8;
+    border:none;
+    border-radius:8px;
+    color:black;
+    font-weight:bold;
+    transition:0.2s;
+}
+
+button:hover{
+    background:#0ea5e9;
+    transform:scale(1.05);
+}
+
+input,select{
+    padding:6px;
+    margin:5px;
+    background:#0f172a;
+    color:white;
+    border:1px solid #334155;
+    border-radius:8px;
+}
+
+input:focus, select:focus{
+    outline:none;
+    border-color:#38bdf8;
+}
+
+.titulo-seccion{font-weight:bold;text-align:center;margin-top:10px;}
+
+.top-row{display:flex;gap:20px;margin-top:20px;align-items:flex-start;}
+.bloque{
+    text-align:center;
+    flex:1;
+    background:#1e293b;
+    border-radius:12px;
+    padding:12px;
+    box-shadow:0 0 10px rgba(0,0,0,0.3);
+}
+
+.calendario{
+    width:220px;
+    background:#1e293b;
+    border:1px solid #334155;
+    border-radius:12px;
+    padding:10px;
+    font-size:12px;
+    box-shadow:0 0 10px rgba(0,0,0,0.3);
+}
+.cal-header{display:flex;justify-content:space-between;font-weight:bold;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+
+.cal-dia{
+    padding:5px;
+    border-radius:5px;
+    position:relative;
+    transition:0.2s;
+    cursor:pointer;
+}
+
+.cal-dia:hover{
+    transform:scale(1.1);
+    background:#334155;
+}
+
+.hoy{
+background:#007bff;
+color:white;
+border:2px solid black;
+font-weight:bold;
+transform:scale(1.1);
+}
+
+.hoy::before{
+content:"📍";
+position:absolute;
+top:2px;
+left:2px;
+background:#007bff;
+color:white;
+border-radius:50%;
+padding:2px 3px;
+font-size:9px;
+line-height:1;
+}
+
+.barra-container{width:100%;background:#ddd;border-radius:20px;height:30px;margin-top:10px;}
+.barra{height:100%;width:0%;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;}
+
+.alerta{padding:8px;margin:5px 0;border-radius:8px;font-weight:bold;}
+.alerta-warning{background:#fff3cd;color:#856404;}
+.alerta-danger{background:#f8d7da;color:#721c24;}
+
+#resumenUsuario{
+    background:#020617;
+    border:1px solid #38bdf8;
+    padding:10px;
+    border-radius:10px;
+    margin-bottom:10px;
+    text-align:center;
+    font-weight:bold;
+    color:#38bdf8;
+}
+
+.dashboard{
+    margin-top:30px;
+    margin-bottom:40px;
+    padding:15px;
+    border-radius:10px;
+    background:#020617;
+    border:1px solid #38bdf8;
+    height:45vh;
+
+    display:flex;
+    flex-direction:column;
+}
+
+.dashboard canvas{
+    flex:1;
+}
+
+.dashboard h3{
+    margin:0 0 10px 0;
+}
+
+.rango{
+    background:#14532d;
+    color:#22c55e;
+}
+
+.fuera{
+    background:#450a0a;
+    color:#f87171;
+    opacity:0.6;
+}
+
+.con-gasto{
+    background:#78350f;
+    border:1px solid #f59e0b;
+    position:relative;
+}
+
+.con-gasto::after{
+content:"💸";
+position:absolute;
+bottom:2px;
+right:2px;
+background:#ff9800;
+border-radius:50%;
+padding:2px 3px;
+font-size:9px;
+line-height:1;
+}
+
+/* ================= RESPONSIVE MOBILE ================= */
+@media (max-width: 768px){
+
+    body{
+        padding:10px;
+        max-width:100vw;
+        overflow-x:hidden;
+    }
+
+    .container{
+        padding:12px;
+    }
+
+    /* 🔥 CLAVE: cambia horizontal a vertical */
+    .top-row{
+        flex-direction:column;
+        gap:15px;
+    }
+
+    .bloque{
+        width:100%;
+    }
+
+    .calendario{
+        width:100%;
+    }
+
+    /* inputs y botones full ancho */
+    input, select, button{
+        width:100%;
+        box-sizing:border-box;
+    }
+
+    /* tablas más compactas */
+    table{
+        font-size:12px;
+        display:block;
+        overflow-x:auto;
+        white-space:nowrap;
+    }
+
+    th, td{
+        padding:6px;
+    }
+
+    h1{
+        font-size:20px;
+    }
+
+    .dashboard{
+        height:300px;
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="loginBox" style="text-align:center; margin-top:100px;">
+    <h2>🔐 Acceso privado</h2>
+    <input id="user" placeholder="Usuario"><br><br>
+    <input id="pass" type="password" placeholder="Contraseña"><br><br>
+    <button onclick="login()">Ingresar</button>
+    <p id="errorLogin" style="color:red;"></p>
+</div>
+
+<div class="container" id="app" style="display:none;">
+<h1>Gestor de Presupuesto</h1>
+
+<div id="resumenUsuario">Aún no has configurado tu presupuesto</div>
+<div id="alertasBox"></div>
+
+<div style="text-align:center;">
+<div id="tabs"></div>
+<input id="nuevoPerfil" placeholder="Nuevo presupuesto">
+<button onclick="crearPerfil()">➕ Crear</button>
+</div>
+
+<div class="top-row">
+
+<div class="calendario">
+<div class="cal-header">
+<button onclick="cambiarMes(-1)">◀</button>
+<span id="mesAnio"></span>
+<button onclick="cambiarMes(1)">▶</button>
+</div>
+<div class="cal-grid" id="diasSemana"></div>
+<div class="cal-grid" id="calDias"></div>
+</div>
+
+<!-- MODELO -->
+<div class="bloque">
+<div class="titulo-seccion">Escoger modelo</div>
+<select id="modelo">
+<option value="50">50/30/20</option>
+<option value="cero">Base Cero</option>
+<option value="sobres">Sobres</option>
+<option value="objetivos">Objetivos</option>
+<option value="kakebo">Kakebo</option>
+</select>
+
+<!-- DESCRIPCIÓN DINÁMICA -->
+<div id="infoModeloExtra" style="
+margin-top:10px;
+background:#020617;
+border:1px solid #38bdf8;
+padding:12px;
+border-radius:12px;
+font-size:13px;
+text-align:left;
+color:#38bdf8;
+line-height:1.5;
+">
+Selecciona un modelo para ver más detalles aquí
+</div>
+
+<div id="fechasBox">
+<input type="date" id="fechaInicio">
+<input type="date" id="fechaFin">
+<p id="duracionTexto" style="font-weight:bold;"></p>
+</div>
+
+<br>
+<button id="btnGenerar" onclick="generar()" disabled>Generar</button>
+</div>
+
+<!-- INGRESO DERECHA -->
+<div class="bloque">
+<div class="titulo-seccion">Ingreso</div>
+
+<div id="mensajeFlujo" style="
+font-size:13px;
+padding:8px;
+border-radius:8px;
+margin-bottom:8px;
+background:#450a0a;
+color:#f87171;
+font-weight:bold;
+transition:0.3s;
+">
+⚠️ Primero selecciona modelo y fechas
+</div>
+
+<input id="ingreso" placeholder="Ingrese su ingreso" disabled oninput="formatearInputMoneda(this)">
+</div>
+
+</div>
+
+<div id="catBox" style="display:none;">
+<h3 style="text-align:center;">Categorías</h3>
+<input id="catNombre" placeholder="Nombre">
+<input id="catValor" placeholder="Valor" oninput="formatearInputMoneda(this)">
+<button onclick="addCat()">Agregar</button>
+<ul id="listaCat"></ul>
+</div>
+
+<h3>Presupuesto</h3>
+<table>
+<thead><tr><th>Categoría</th><th>Valor</th><th>%</th></tr></thead>
+<tbody id="tablaP"></tbody>
+</table>
+
+<h3>Gastos</h3>
+<input id="desc" placeholder="Descripción">
+<input id="valor" placeholder="Valor" oninput="formatearInputMoneda(this)">
+<input type="date" id="fecha">
+<select id="categoriaGasto"></select>
+<button onclick="addGasto()">Agregar</button>
+
+<table>
+<thead>
+<tr>
+<th>Fecha</th>
+<th>Categoría</th>
+<th>Desc</th>
+<th>Valor</th>
+<th></th>
+</tr>
+</thead>
+<tbody id="tablaG"></tbody>
+</table>
+
+<h3>Resumen</h3>
+<p>Ingreso: <span id="ing"></span></p>
+<p>Gastos: <span id="gas"></span></p>
+<p>Saldo: <span id="sal"></span></p>
+
+<h3>Control</h3>
+<div class="barra-container">
+<div id="barra" class="barra">0%</div>
+</div>
+<p id="leyenda"></p>
+
+<h4>Control por Categoría</h4>
+<table>
+<thead>
+<tr>
+<th>Categoría</th>
+<th>Presupuesto</th>
+<th>Gasto</th>
+<th>Disponible</th>
+<th>Estado</th>
+</tr>
+</thead>
+<tbody id="controlCat"></tbody>
+</table>
+
+<!-- DASHBOARD -->
+<div class="dashboard">
+<h3 style="text-align:center;">📊 Dashboard de Riesgo</h3>
+<canvas id="graficoRiesgo"></canvas>
+</div>
+
+<div style="text-align:center;margin-top:20px;">
+<button onclick="limpiarTodo()" style="background:red;color:white;font-weight:bold;">
+🗑 Limpiar todo este presupuesto
+</button>
+</div>
+
+<div style="text-align:center;margin-top:10px;">
+<button onclick="exportar('excel')">📊 Exportar Excel</button>
+<button onclick="exportar('txt')">📄 Exportar TXT</button>
+<button onclick="exportar('pdf')">📕 Exportar PDF</button>
+<button onclick="exportar('jpg')">🖼 Exportar Imagen</button>
+</div>
+
+</div>
+
+<script>
+
+// ================= NUEVO =================
+
+const descripcionesModelos = {
+"50": `
+<b>50/30/20</b><br>
+Divide los ingresos en:<br>
+• 50% necesidades<br>
+• 30% deseos<br>
+• 20% ahorro/deudas<br>
+👉 Balance entre vivir y ahorrar.
+`,
+
+"cero": `
+<b>Base Cero</b><br>
+Asigna todo tu ingreso hasta quedar en 0.<br>
+Ej: Mercado, transporte, servicios.<br>
+👉 Control total del dinero.
+`,
+
+"sobres": `
+<b>Sobres</b><br>
+Define límites por categoría.<br>
+Ej: $300k en mercado, $100k transporte.<br>
+👉 Evita gastar de más.
+`,
+
+"objetivos": `
+<b>Objetivos</b><br>
+Ahorra para metas específicas.<br>
+Ej: Viaje o comprar carro.<br>
+👉 Fomenta el ahorro.
+`,
+
+"kakebo": `
+<b>Kakebo</b><br>
+Registra todos los gastos sin categorías.<br>
+Ej: Un solo presupuesto general.<br>
+👉 Mayor conciencia de gasto.
+`
+};  
+
+function actualizarInfoModelo(){
+
+let modeloActual = modelo.value;
+
+let info = descripcionesModelos[modeloActual] || '';
+
+document.getElementById("infoModeloExtra").innerHTML = info;
+
+}
+
+function calcularDuracion(){
+let fi = fechaInicio.value;
+let ff = fechaFin.value;
+
+if(!fi || !ff) return;
+
+let diff = (new Date(ff) - new Date(fi)) / (1000*60*60*24);
+
+if(diff >= 0){
+duracionTexto.innerText = "⏳ Duración: " + (diff+1) + " días";
+}else{
+duracionTexto.innerText = "⚠️ Fecha inválida";
+}
+}
+
+function calcularProgresoTiempo(){
+
+let fi = fechaInicio.value;
+let ff = fechaFin.value;
+
+if(!fi || !ff) return;
+
+let inicio = new Date(fi);
+let fin = new Date(ff);
+let hoy = new Date();
+
+inicio.setHours(0,0,0,0);
+fin.setHours(0,0,0,0);
+hoy.setHours(0,0,0,0);
+
+let total = (fin - inicio) / (1000*60*60*24) + 1;
+let transcurridos = (hoy - inicio) / (1000*60*60*24) + 1;
+let restantes = (fin - hoy) / (1000*60*60*24);
+
+if(hoy < inicio){
+duracionTexto.innerText = "⏳ Aún no inicia el presupuesto";
+return;
+}
+
+if(hoy > fin){
+duracionTexto.innerText = "📅 El presupuesto ya terminó";
+return;
+}
+
+duracionTexto.innerText =
+`📅 Día ${Math.floor(transcurridos)} de ${Math.floor(total)} | Faltan ${Math.ceil(restantes)} días`;
+}
+
+// =========================================
+
+let chart;
+
+// ===== DASHBOARD =====
+function renderGrafico(){
+
+let labels = presupuesto.map(p=>p.n);
+
+let dataPresupuesto = presupuesto.map(p=>p.v);
+
+let dataGastos = presupuesto.map(p=>{
+return gastos
+.filter(g=>g.c===p.n)
+.reduce((a,g)=>a+g.v,0);
+});
+
+if(chart){
+chart.destroy();
+}
+
+const ctx = graficoRiesgo.getContext('2d');
+
+// gradientes bonitos (NO rompe nada)
+let grad1 = ctx.createLinearGradient(0,0,0,400);
+grad1.addColorStop(0, '#38bdf8');
+grad1.addColorStop(1, '#0ea5e9');
+
+let grad2 = ctx.createLinearGradient(0,0,0,400);
+grad2.addColorStop(0, '#f472b6');
+grad2.addColorStop(1, '#ec4899');
+
+chart = new Chart(ctx, {
+type: 'bar',
+data: {
+labels: labels,
+datasets: [
+{
+label: 'Presupuesto',
+data: dataPresupuesto,
+backgroundColor: grad1,
+borderRadius: 10,
+barPercentage: 0.6,
+categoryPercentage: 0.5
+},
+{
+label: 'Gastos',
+data: dataGastos,
+backgroundColor: grad2,
+borderRadius: 10,
+barPercentage: 0.6,
+categoryPercentage: 0.5
+}
+]
+},
+options: {
+responsive: true,
+maintainAspectRatio: false,
+
+animation: {
+duration: 1200,
+easing: 'easeOutQuart'
+},
+
+plugins: {
+legend: {
+labels: { color: '#e2e8f0' }
+},
+title: {
+display: true,
+text: 'Comparación Presupuesto vs Gastos',
+color: '#38bdf8'
+},
+tooltip: {
+callbacks: {
+label: function(context) {
+return context.dataset.label + ': ' + 
+new Intl.NumberFormat('es-CO', {
+style: 'currency',
+currency: 'COP'
+}).format(context.raw);
+}
+}
+}
+},
+
+scales: {
+x: {
+ticks: { color: '#94a3b8' },
+grid: { display: false }
+},
+y: {
+beginAtZero: true,
+ticks: { color: '#94a3b8' },
+grid: { color: 'rgba(148,163,184,0.2)' }
+}
+}
+}
+});
+}
+
+// ===== RESUMEN =====
+function actualizarResumenUsuario(){
+let ingresoVal = parseFloat(ingreso.value.replace(/\./g, ''));
+let modeloVal = modelo.options[modelo.selectedIndex]?.text || '';
+
+let texto = '';
+
+if(ingresoVal){
+texto += `💰 Ingreso: ${formatoCOP(ingresoVal)}`;
+}
+
+if(modeloVal){
+texto += ` | 📊 Modelo: ${modeloVal}`;
+}
+
+if(!texto){
+texto = 'Aún no has configurado tu presupuesto';
+}
+
+resumenUsuario.innerHTML = texto;
+}
+
+// ===== PERFILES =====
+let perfiles = JSON.parse(localStorage.getItem('perfiles')) || ['p1'];
+let perfil = localStorage.getItem('perfilActivo') || perfiles[0];
+
+function guardarPerfiles(){
+localStorage.setItem('perfiles', JSON.stringify(perfiles));
+localStorage.setItem('perfilActivo', perfil);
+}
+
+function renderTabs(){
+tabs.innerHTML='';
+perfiles.forEach(p=>{
+tabs.innerHTML+=`
+<button onclick="cambiarPerfil('${p}')"
+style="${p===perfil?'background:#007bff;color:white;':''}">
+${p}
+</button>
+
+<button onclick="duplicarPerfil('${p}')">📄</button>
+
+<button onclick="eliminarPerfil('${p}')">❌</button>
+`;
+});
+}
+
+function crearPerfil(){
+let nombre=nuevoPerfil.value.trim();
+if(!nombre)return;
+if(perfiles.includes(nombre)){alert('Ya existe');return;}
+
+// crear perfil
+perfiles.push(nombre);
+perfil=nombre;
+
+// 🔥 LIMPIAR DATOS DEL NUEVO PERFIL (CLAVE)
+localStorage.removeItem('p_' + nombre);
+localStorage.removeItem('c_' + nombre);
+localStorage.removeItem('g_' + nombre);
+localStorage.removeItem('modelo_' + nombre);
+localStorage.removeItem('ingreso_' + nombre);
+localStorage.removeItem('fechaInicio_' + nombre);
+localStorage.removeItem('fechaFin_' + nombre);
+
+guardarPerfiles();
+
+nuevoPerfil.value='';
+renderTabs();
+cambiarPerfil(perfil);
+}
+
+function eliminarPerfil(nombre){
+if(perfiles.length===1){alert('Debe existir al menos uno');return;}
+if(!confirm('¿Eliminar presupuesto?'))return;
+
+perfiles=perfiles.filter(p=>p!==nombre);
+perfil=perfiles[0];
+
+guardarPerfiles();
+renderTabs();
+cambiarPerfil(perfil);
+}
+
+function duplicarPerfil(nombre){
+
+let nuevoNombre = prompt("Nombre del nuevo presupuesto:", nombre + "_copia");
+
+if(!nuevoNombre || nuevoNombre.trim()==='') return;
+
+if(perfiles.includes(nuevoNombre)){
+alert("Ya existe un presupuesto con ese nombre");
+return;
+}
+
+// 🔥 NUEVO: preguntar sobre gastos
+let copiarGastos = confirm("¿Deseas copiar también los gastos?\n\nAceptar = Sí\nCancelar = No");
+
+// crear nuevo perfil
+perfiles.push(nuevoNombre);
+
+// función segura para copiar
+function copiar(keyBase){
+let data = localStorage.getItem(keyBase + nombre);
+if(data){
+localStorage.setItem(keyBase + nuevoNombre, data);
+}
+}
+
+// copiar datos principales
+copiar('p_');
+copiar('c_');
+
+// 🔥 SOLO copiar gastos si el usuario acepta
+if(copiarGastos){
+copiar('g_');
+}else{
+localStorage.setItem('g_' + nuevoNombre, JSON.stringify([]));
+}
+
+// copiar configuración
+copiar('modelo_');
+copiar('ingreso_');
+copiar('fechaInicio_');
+copiar('fechaFin_');
+
+// activar nuevo perfil
+perfil = nuevoNombre;
+
+guardarPerfiles();
+renderTabs();
+cambiarPerfil(nuevoNombre);
+
+alert("✅ Presupuesto duplicado correctamente");
+}
+
+function limpiarTodo(){
+if(!confirm('⚠️ Esto borrará TODOS los datos de este presupuesto. ¿Continuar?')) return;
+
+localStorage.removeItem('p_'+perfil);
+localStorage.removeItem('c_'+perfil);
+localStorage.removeItem('g_'+perfil);
+
+// 🔥 BORRAR FECHAS
+localStorage.removeItem('fechaInicio_' + perfil);
+localStorage.removeItem('fechaFin_' + perfil);
+
+// 🔥 limpiar inputs
+fechaInicio.value = '';
+fechaFin.value = '';
+duracionTexto.innerText = '';
+
+presupuesto=[];
+categorias=[];
+gastos=[];
+
+render();
+renderCalendario();
+}
+
+// ===== RESTO =====
+document.addEventListener("DOMContentLoaded",()=>{
+
+fecha.value=new Date().toISOString().split('T')[0];
+
+// recuperar modelo
+let modeloGuardado = localStorage.getItem('modelo_' + perfil);
+if(modeloGuardado){
+modelo.value = modeloGuardado;
+if(ingreso.value){
+    formatearInputMoneda(ingreso); // 👈 AÑADIDO
+}
+}
+
+// 🔥 NUEVO: recuperar fechas
+let fi = localStorage.getItem('fechaInicio_' + perfil);
+let ff = localStorage.getItem('fechaFin_' + perfil);
+
+if(fi) fechaInicio.value = fi;
+if(ff) fechaFin.value = ff;
+
+// 🔥 recalcular duración
+calcularDuracion();
+calcularProgresoTiempo();    
+
+// 🔥 pintar calendario con rango
+renderCalendario();
+
+// interfaz
+catBox.style.display = (modelo.value !== '50') ? 'block' : 'none';
+actualizarInfoModelo();
+
+validarFlujo();
+
+});
+
+let fechaCal = new Date();
+function renderCalendario(){
+
+let mes = fechaCal.getMonth();
+let anio = fechaCal.getFullYear();
+
+const meses=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+mesAnio.innerText=meses[mes]+" "+anio;
+
+diasSemana.innerHTML='';
+["D","L","M","M","J","V","S"].forEach(d=>diasSemana.innerHTML+=`<div>${d}</div>`);
+
+calDias.innerHTML='';
+
+let primerDia=new Date(anio,mes,1).getDay();
+let diasMes=new Date(anio,mes+1,0).getDate();
+
+for(let i=0;i<primerDia;i++) calDias.innerHTML+='<div></div>';
+
+let hoy=new Date();
+
+// 🔥 NUEVO: rango de fechas
+let fi = fechaInicio.value ? new Date(fechaInicio.value) : null;
+let ff = fechaFin.value ? new Date(fechaFin.value) : null;
+
+for(let d=1;d<=diasMes;d++){
+
+let fechaActual = new Date(anio,mes,d);
+
+let clase='cal-dia';
+
+// 🔥 detectar gastos del día
+let fechaStr = fechaActual.toISOString().split('T')[0];
+let gastosDelDia = gastos.filter(g => g.f === fechaStr);
+let tieneGasto = gastosDelDia.length > 0;
+
+// 🔥 tooltip con detalle
+let tooltip = '';
+
+if(tieneGasto){
+let totalDia = gastosDelDia.reduce((a,g)=>a+g.v,0);
+
+tooltip = 'Gastos:\n';
+
+gastosDelDia.forEach(g=>{
+tooltip += `• ${g.d}: ${formatoCOP(g.v)}\n`;
+});
+
+tooltip += `\nTotal: ${formatoCOP(totalDia)}`;
+}
+
+// 🟢 DENTRO DEL RANGO
+if(fi && ff && fechaActual >= fi && fechaActual <= ff){
+clase += ' rango';
+}
+
+// 🔴 FUERA DEL RANGO
+if(fi && ff && (fechaActual < fi || fechaActual > ff)){
+clase += ' fuera';
+}
+
+// 💸 DÍA CON GASTO
+if(tieneGasto){
+clase += ' con-gasto';
+}
+
+// 🔵 HOY (SIEMPRE AL FINAL → PRIORIDAD VISUAL)
+if(
+d===hoy.getDate() &&
+mes===hoy.getMonth() &&
+anio===hoy.getFullYear()
+){
+clase += ' hoy';
+}
+
+calDias.innerHTML+=`<div class="${clase}" title="${tooltip}">${d}</div>`;
+}
+}
+
+function cambiarMes(v){fechaCal.setMonth(fechaCal.getMonth()+v);renderCalendario();}
+
+function formatoCOP(v){
+return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP'}).format(v);
+}
+
+function formatearInputMoneda(input){
+
+// quitar todo lo que no sea número
+let valor = input.value.replace(/\D/g, '');
+
+if(valor === ''){
+input.value = '';
+return;
+}
+
+// convertir a número
+let numero = parseInt(valor, 10);
+
+// formatear sin símbolo $
+input.value = new Intl.NumberFormat('es-CO').format(numero);
+}
+
+function key(t){return t+'_'+perfil}
+function get(t){return JSON.parse(localStorage.getItem(key(t)))||[]}
+function set(t,d){localStorage.setItem(key(t),JSON.stringify(d))}
+
+let presupuesto=get('p');
+let categorias=get('c');
+let gastos=get('g');
+
+function cambiarPerfil(p){
+perfil=p;
+localStorage.setItem('perfilActivo', perfil);
+
+presupuesto=get('p');
+categorias=get('c');
+gastos=get('g');
+
+if(presupuesto.length === 0){
+    ingreso.value = '';
+}
+
+// 👇 recuperar modelo guardado
+let modeloGuardado = localStorage.getItem('modelo_' + perfil);
+
+if(modeloGuardado){
+modelo.value = modeloGuardado;
+}else{
+modelo.value = '50';
+}
+
+// actualizar interfaz
+catBox.style.display = (modelo.value !== '50') ? 'block' : 'none';
+actualizarInfoModelo();
+
+// 👇 NUEVO: cargar ingreso guardado
+let ingresoGuardado = localStorage.getItem('ingreso_' + perfil);
+if(ingresoGuardado){
+    ingreso.value = ingresoGuardado;
+    formatearInputMoneda(ingreso); // 👈 AÑADIDO
+}else{
+    ingreso.value = '';
+}
+
+// 🔥 NUEVO: recuperar fechas por perfil
+let fi = localStorage.getItem('fechaInicio_' + perfil);
+let ff = localStorage.getItem('fechaFin_' + perfil);
+
+fechaInicio.value = fi || '';
+fechaFin.value = ff || '';
+
+// recalcular duración
+calcularDuracion();
+
+// actualizar calendario
+renderCalendario();
+
+renderTabs();
+render();
+validarFlujo();
+}
+
+modelo.onchange = () => {
+
+catBox.style.display = (modelo.value !== '50') ? 'block' : 'block';
+
+actualizarInfoModelo();
+actualizarResumenUsuario();
+
+localStorage.setItem('modelo_' + perfil, modelo.value);
+
+}
+
+ingreso.oninput = () => {
+formatearInputMoneda(ingreso); // 👈 AÑADIDO
+actualizarResumenUsuario();
+localStorage.setItem('ingreso_' + perfil, ingreso.value);
+}
+
+fechaInicio.onchange = () => {
+calcularDuracion();
+calcularProgresoTiempo();
+renderCalendario();
+
+// 👇 guardar por perfil
+localStorage.setItem('fechaInicio_' + perfil, fechaInicio.value);
+}
+
+fechaFin.onchange = () => {
+calcularDuracion();
+calcularProgresoTiempo();
+renderCalendario();
+
+// 👇 guardar por perfil
+localStorage.setItem('fechaFin_' + perfil, fechaFin.value);
+}
+
+// 🔥 VALIDAR FLUJO DE CAMPOS
+function validarFlujo(){
+
+let mensaje = document.getElementById("mensajeFlujo");
+let btnGenerar = document.getElementById("btnGenerar");
+
+// 1. Validar modelo y fechas
+if(modelo.value && fechaInicio.value && fechaFin.value){
+    ingreso.disabled = false;
+    mensaje.innerText = "⚠️ Ahora ingresa tu ingreso";
+    mensaje.style.background = "#78350f";
+    mensaje.style.color = "#fbbf24";
+}else{
+    ingreso.disabled = true;
+    mensaje.innerText = "⚠️ Primero selecciona modelo y fechas";
+    mensaje.style.background = "#450a0a";
+    mensaje.style.color = "#f87171";
+
+    btnGenerar.disabled = true;
+    return;
+}
+
+// 2. Validar ingreso
+let ing = parseFloat(ingreso.value.replace(/\./g, ''));
+
+if(!ing){
+    btnGenerar.disabled = true;
+}else{
+    btnGenerar.disabled = false;
+    mensaje.innerText = "✅ Todo listo para generar";
+    mensaje.style.background = "#14532d";
+    mensaje.style.color = "#22c55e";
+}
+
+}
+
+// 🔥 activar validación cuando cambian campos
+modelo.addEventListener("change", validarFlujo);
+fechaInicio.addEventListener("change", validarFlujo);
+fechaFin.addEventListener("change", validarFlujo);
+ingreso.addEventListener("input", validarFlujo);
+
+// ===== CATEGORÍAS (AGREGADO: EDITAR/ELIMINAR) =====
+function addCat(){
+let n = catNombre.value.trim();
+let v = parseFloat(catValor.value.replace(/\./g, ''));
+let ing = parseFloat(ingreso.value.replace(/\./g, ''));
+
+if(!n || isNaN(v)) return;
+
+if(!ing){
+alert("Primero debes ingresar el ingreso");
+return;
+}
+
+// suma actual
+let totalActual = categorias.reduce((a,c)=>a+c.v,0);
+
+// VALIDACIÓN
+if(totalActual + v > ing){
+alert("⚠️ Estás excediendo tu ingreso disponible");
+return;
+}
+
+// evita duplicados
+if(categorias.some(c=>c.n===n)){
+alert('La categoría ya existe');
+return;
+}
+
+categorias.push({n,v});
+set('c',categorias);
+
+catNombre.value='';
+catValor.value='';
+
+render();
+}
+
+function eliminarCategoria(nombre){
+if(!confirm('Se eliminará la categoría y sus gastos. ¿Continuar?')) return;
+
+categorias=categorias.filter(c=>c.n!==nombre);
+presupuesto=presupuesto.filter(p=>p.n!==nombre);
+gastos=gastos.filter(g=>g.c!==nombre);
+
+set('c',categorias);
+set('p',presupuesto);
+set('g',gastos);
+
+render();
+}
+
+function editarCategoria(nombre){
+let nueva=prompt('Nuevo nombre:',nombre);
+if(!nueva || nueva.trim()==='') return;
+
+// evita duplicados al renombrar
+if(nueva!==nombre && categorias.some(c=>c.n===nueva)){
+alert('Ya existe una categoría con ese nombre');
+return;
+}
+
+let actual=categorias.find(c=>c.n===nombre);
+let nuevoValor=parseFloat(prompt('Nuevo valor:', actual.v));
+if(isNaN(nuevoValor)) return;
+
+categorias=categorias.map(c=>c.n===nombre?{n:nueva,v:nuevoValor}:c);
+presupuesto=presupuesto.map(p=>p.n===nombre?{n:nueva,v:nuevoValor}:p);
+gastos=gastos.map(g=>g.c===nombre?{...g,c:nueva}:g);
+
+set('c',categorias);
+set('p',presupuesto);
+set('g',gastos);
+
+render();
+}
+
+function generar(){
+
+// 🔴 1. Validar modelo
+if(!modelo.value){
+alert("⚠️ Debes seleccionar un modelo primero");
+modelo.focus();
+return;
+}
+
+// 🔴 2. Validar fechas
+let fi = fechaInicio.value;
+let ff = fechaFin.value;
+
+if(!fi){
+alert("⚠️ Debes ingresar la fecha de inicio");
+fechaInicio.focus();
+return;
+}
+
+if(!ff){
+alert("⚠️ Debes ingresar la fecha de fin");
+fechaFin.focus();
+return;
+}
+
+if(new Date(ff) < new Date(fi)){
+alert("⚠️ La fecha fin no puede ser menor a la fecha inicio");
+fechaFin.focus();
+return;
+}
+
+// 🔴 3. Validar ingreso (AL FINAL)
+let ing = parseFloat(ingreso.value.replace(/\./g, ''));
+
+if(!ing){
+alert("⚠️ Debes ingresar tu ingreso");
+ingreso.focus();
+return;
+}
+
+// ================= RESTO DE TU LÓGICA =================
+
+if(modelo.value !== '50'){
+
+// 🔴 VALIDAR QUE EXISTAN CATEGORÍAS
+if(categorias.length === 0){
+alert("⚠️ Debes agregar al menos una categoría antes de generar el presupuesto");
+return;
+}
+
+// 🔴 VALIDAR QUE TODAS TENGAN VALOR
+let categoriasInvalidas = categorias.some(c => !c.v || c.v <= 0);
+
+if(categoriasInvalidas){
+alert("⚠️ Todas las categorías deben tener un valor válido");
+return;
+}
+
+let totalCat = categorias.reduce((a,c)=>a+c.v,0);
+
+// 🔴 VALIDAR QUE NO SUPERE EL INGRESO
+if(totalCat > ing){
+alert("⚠️ Tus categorías superan tu ingreso");
+return;
+}
+
+}
+
+if(modelo.value==='50'){
+presupuesto=[
+{n:'Necesidades',v:ing*0.5},
+{n:'Deseos',v:ing*0.3},
+{n:'Ahorro',v:ing*0.2}
+];
+}else{
+presupuesto=categorias.map(c=>({n:c.n,v:c.v}));
+}
+
+set('p',presupuesto);
+render();
+}
+
+function addGasto(){
+
+let d = desc.value.trim();
+let v = parseFloat(valor.value.replace(/\./g, ''));
+let f = fecha.value;
+let c = categoriaGasto.value;
+
+if(!d || !v || !f || !c) return;
+
+// 👇 VALIDACIÓN DE RANGO DE FECHAS
+let fi = fechaInicio.value;
+let ff = fechaFin.value;
+
+if(fi && ff){
+let fechaGasto = new Date(f);
+let inicio = new Date(fi);
+let fin = new Date(ff);
+
+if(fechaGasto < inicio || fechaGasto > fin){
+alert("❌ El gasto está fuera del rango del presupuesto");
+return;
+}
+}
+
+gastos.push({id:Date.now(),d,v,f,c});
+set('g',gastos);
+
+desc.value='';
+valor.value='';
+
+render();
+renderCalendario(); // 💸 ACTUALIZA CALENDARIO
+}
+
+function delG(id){
+gastos=gastos.filter(g=>g.id!==id);
+set('g',gastos);
+render();
+renderCalendario(); // 💸 ACTUALIZA CALENDARIO
+}
+
+function editarGasto(id){
+
+let gasto = gastos.find(g => g.id === id);
+if(!gasto) return;
+
+// pedir nuevos valores
+let nuevaDesc = prompt("Editar descripción:", gasto.d);
+if(nuevaDesc === null) return;
+
+let nuevoValor = parseFloat(prompt("Editar valor:", gasto.v));
+if(isNaN(nuevoValor)) return;
+
+let nuevaFecha = prompt("Editar fecha (YYYY-MM-DD):", gasto.f);
+if(!nuevaFecha) return;
+
+let nuevaCategoria = prompt("Editar categoría:", gasto.c);
+if(!nuevaCategoria) return;
+
+// validar rango de fechas
+let fi = fechaInicio.value;
+let ff = fechaFin.value;
+
+if(fi && ff){
+let fechaGasto = new Date(nuevaFecha);
+let inicio = new Date(fi);
+let fin = new Date(ff);
+
+if(fechaGasto < inicio || fechaGasto > fin){
+alert("❌ El gasto está fuera del rango del presupuesto");
+return;
+}
+}
+
+// actualizar gasto
+gasto.d = nuevaDesc;
+gasto.v = nuevoValor;
+gasto.f = nuevaFecha;
+gasto.c = nuevaCategoria;
+
+set('g', gastos);
+
+render();
+renderCalendario();
+}
+
+function render(){
+
+// ===== LISTA DE CATEGORÍAS (NUEVO) =====
+listaCat.innerHTML='';
+categorias.forEach(c=>{
+listaCat.innerHTML+=`
+<li>
+${c.n} - ${formatoCOP(c.v)}
+<button onclick="editarCategoria('${c.n}')">✏️</button>
+<button onclick="eliminarCategoria('${c.n}')">❌</button>
+</li>`;
+});
+
+// ===== RESTO ORIGINAL =====
+categoriaGasto.innerHTML='<option value="">Categoría</option>';
+presupuesto.forEach(p=>{
+categoriaGasto.innerHTML+=`<option value="${p.n}">${p.n}</option>`;
+});
+
+tablaP.innerHTML='';
+let total=presupuesto.reduce((a,p)=>a+p.v,0);
+let ingresoVal = parseFloat(ingreso.value.replace(/\./g, '')) || 0;
+let restante = ingresoVal - total;
+
+presupuesto.forEach(p=>{
+tablaP.innerHTML+=`<tr>
+<td>${p.n}</td>
+<td>${formatoCOP(p.v)}</td>
+<td>${((p.v/total)*100).toFixed(1)}%</td>
+</tr>`;
+});
+
+tablaG.innerHTML='';
+gastos.forEach(g=>{
+tablaG.innerHTML+=`<tr>
+<td>${g.f||''}</td>
+<td>${g.c||''}</td>
+<td>${g.d}</td>
+<td>${formatoCOP(g.v)}</td>
+<td>
+<button onclick="editarGasto(${g.id})">✏️</button>
+<button onclick="delG(${g.id})">❌</button>
+</td>
+</tr>`;
+});
+
+let gastoTotal=gastos.reduce((a,g)=>a+g.v,0);
+let saldo=total-gastoTotal;
+
+ing.innerText=formatoCOP(total);
+gas.innerText=formatoCOP(gastoTotal);
+sal.innerText=formatoCOP(saldo);
+
+let pct=total?(gastoTotal/total)*100:0;
+barra.style.width=Math.min(pct,100)+'%';
+barra.innerText=pct.toFixed(2)+'%';
+
+if(pct<95){
+barra.style.background='green';
+leyenda.innerHTML='Dentro del presupuesto';
+}
+else if(pct<=100){
+barra.style.background='orange';
+leyenda.innerHTML='Cerca del límite';
+}
+else{
+barra.style.background='red';
+leyenda.innerHTML='Sobre gasto';
+}
+
+// 👇 NUEVO
+leyenda.innerHTML += `<br>Disponible por asignar: ${formatoCOP(restante)}`;
+
+// ALERTAS
+alertasBox.innerHTML='';
+presupuesto.forEach(p=>{
+let gastoCat=gastos.filter(g=>g.c===p.n).reduce((a,g)=>a+g.v,0);
+let pctCat=p.v?(gastoCat/p.v)*100:0;
+
+if(pctCat>=100){
+alertasBox.innerHTML+=`<div class="alerta alerta-danger">🚨 Exceso en ${p.n}</div>`;
+}
+else if(pctCat>=80){
+alertasBox.innerHTML+=`<div class="alerta alerta-warning">⚠️ Límite en ${p.n}</div>`;
+}
+});
+
+// CONTROL
+controlCat.innerHTML='';
+presupuesto.forEach(p=>{
+let gastoCat=gastos.filter(g=>g.c===p.n).reduce((a,g)=>a+g.v,0);
+let disponible=p.v-gastoCat;
+
+let estado='🟢 Bien';
+let color='green';
+
+if(gastoCat === p.v){
+    estado='⚫ Agotado';
+    color='black';
+}
+else if(gastoCat > p.v){
+    estado='🔴 Excedido';
+    color='red';
+}
+else if(gastoCat >= p.v * 0.8){
+    estado='🟡 Límite';
+    color='orange';
+}
+
+controlCat.innerHTML+=`
+<tr>
+<td>${p.n}</td>
+<td>${formatoCOP(p.v)}</td>
+<td>${formatoCOP(gastoCat)}</td>
+<td>${formatoCOP(disponible)}</td>
+<td style="color:${color};font-weight:bold;">${estado}</td>
+</tr>`;
+});
+
+actualizarResumenUsuario();
+renderGrafico();
+}
+
+// ===== EXPORTAR =====
+function exportar(tipo){
+
+let contenido = generarContenidoPlano();
+
+if(tipo === 'txt'){
+descargarArchivo(contenido, 'presupuesto.txt', 'text/plain');
+}
+
+if(tipo === 'excel'){
+exportarExcelPRO();
+}
+
+if(tipo === 'pdf'){
+exportarPDFPRO();
+}
+
+if(tipo === 'jpg'){
+html2canvas(document.body).then(canvas=>{
+let link = document.createElement('a');
+link.download = 'presupuesto.jpg';
+link.href = canvas.toDataURL();
+link.click();
+});
+}
+
+}
+
+
+// ===== GENERAR CONTENIDO =====
+function generarContenidoPlano(){
+
+let texto = '=== PRESUPUESTO ===\n\n';
+
+texto += 'Ingreso: ' + ingreso.value + '\n\n';
+
+texto += '--- Categorías ---\n';
+presupuesto.forEach(p=>{
+texto += `${p.n}: ${p.v}\n`;
+});
+
+texto += '\n--- Gastos ---\n';
+gastos.forEach(g=>{
+texto += `${g.f} | ${g.c} | ${g.d} | ${g.v}\n`;
+});
+
+return texto;
+}
+
+
+// ===== DESCARGA =====
+function descargarArchivo(contenido, nombre, tipo){
+let blob = new Blob([contenido], { type: tipo });
+let link = document.createElement('a');
+link.href = URL.createObjectURL(blob);
+link.download = nombre;
+link.click();
+}
+
+// ===== EXCEL PRO =====
+function exportarExcelPRO(){
+
+let wb = XLSX.utils.book_new();
+
+// ===== RESUMEN =====
+let total = presupuesto.reduce((a,p)=>a+p.v,0);
+let gastoTotal = gastos.reduce((a,g)=>a+g.v,0);
+let saldo = total - gastoTotal;
+
+let resumenData = [
+["Resumen"],
+["Ingreso", ingreso.value],
+["Presupuesto Total", total],
+["Gastos Totales", gastoTotal],
+["Saldo", saldo]
+];
+
+let wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
+XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen");
+
+
+// ===== CATEGORÍAS =====
+let catData = [["Categoría","Valor"]];
+presupuesto.forEach(p=>{
+catData.push([p.n, p.v]);
+});
+
+let wsCat = XLSX.utils.aoa_to_sheet(catData);
+XLSX.utils.book_append_sheet(wb, wsCat, "Categorias");
+
+
+// ===== GASTOS =====
+let gastosData = [["Fecha","Categoría","Descripción","Valor"]];
+gastos.forEach(g=>{
+gastosData.push([g.f, g.c, g.d, g.v]);
+});
+
+let wsGastos = XLSX.utils.aoa_to_sheet(gastosData);
+XLSX.utils.book_append_sheet(wb, wsGastos, "Gastos");
+
+
+// ===== EXPORTAR =====
+XLSX.writeFile(wb, "Presupuesto_PRO.xlsx");
+
+}
+
+// ===== PDF PRO =====
+function exportarPDFPRO(){
+
+const { jsPDF } = window.jspdf;
+let doc = new jsPDF();
+
+let y = 10;
+
+// ===== TÍTULO =====
+doc.setFontSize(16);
+doc.text("Reporte de Presupuesto", 10, y);
+y += 10;
+
+// ===== RESUMEN =====
+let total = presupuesto.reduce((a,p)=>a+p.v,0);
+let gastoTotal = gastos.reduce((a,g)=>a+g.v,0);
+let saldo = total - gastoTotal;
+
+doc.setFontSize(12);
+doc.text(`Ingreso: ${ingreso.value}`, 10, y); y+=6;
+doc.text(`Presupuesto: ${total}`, 10, y); y+=6;
+doc.text(`Gastos: ${gastoTotal}`, 10, y); y+=6;
+doc.text(`Saldo: ${saldo}`, 10, y); y+=10;
+
+
+// ===== CATEGORÍAS =====
+doc.text("Categorías:", 10, y); y+=6;
+
+presupuesto.forEach(p=>{
+doc.text(`${p.n}: ${p.v}`, 10, y);
+y+=5;
+});
+
+// ===== GASTOS =====
+y+=5;
+doc.text("Gastos:", 10, y); y+=6;
+
+gastos.forEach(g=>{
+doc.text(`${g.f} | ${g.c} | ${g.d} | ${g.v}`, 10, y);
+y+=5;
+
+// evita que se salga de la hoja
+if(y > 280){
+doc.addPage();
+y = 10;
+}
+});
+
+
+// ===== GUARDAR =====
+doc.save("Presupuesto_PRO.pdf");
+
+}
+
+renderTabs();
+cambiarPerfil(perfil);
+renderCalendario();
+
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js')
+    .then(() => console.log('✅ Service Worker registrado'))
+    .catch(err => console.log('❌ Error:', err));
+}
+
+// ===== LOGIN SIMPLE =====
+
+// usuarios permitidos
+const usuarios = [
+    {user: "Ivan", pass: "&Van102626"},
+    {user: "invitado", pass: "$Up3rpresu2026"}
+];
+
+function login(){
+
+    let u = document.getElementById("user").value;
+    let p = document.getElementById("pass").value;
+
+    let valido = usuarios.find(x => x.user === u && x.pass === p);
+
+    if(valido){
+        document.getElementById("loginBox").style.display = "none";
+        document.getElementById("app").style.display = "block";
+
+        // guardar sesión
+        localStorage.setItem("sesionActiva", "true");
+    }else{
+        document.getElementById("errorLogin").innerText = "❌ Datos incorrectos";
+    }
+}
+
+// mantener sesión
+window.onload = function(){
+    if(localStorage.getItem("sesionActiva") === "true"){
+        document.getElementById("loginBox").style.display = "none";
+        document.getElementById("app").style.display = "block";
+    }
+}
+
+</script>
+
+</body>
+</html>
